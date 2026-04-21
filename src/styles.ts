@@ -90,9 +90,9 @@ function getCss(theme: ChatWidgetTheme): string {
 
     .kp-star-cluster {
       position: relative;
-      width: 42px;
-      height: 42px;
-      animation: kp-cluster-rotate 7s linear infinite;
+      width: 50px;
+      height: 50px;
+      animation: kp-cluster-rotate 8.5s linear infinite;
     }
 
     .kp-star {
@@ -103,31 +103,33 @@ function getCss(theme: ChatWidgetTheme): string {
     }
 
     .kp-star.main {
-      inset: 50% auto auto 50%;
-      font-size: 28px;
-      transform: translate(-50%, -50%) scale(1);
-      animation: kp-main-pulse 2.6s ease-in-out infinite;
+      top: 50%;
+      left: 50%;
+      font-size: 30px;
+      transform: translate(-50%, -50%) scale(0.96);
+      animation: kp-main-pulse 3s ease-in-out infinite;
     }
 
     .kp-star.orbit-a {
-      top: 3px;
-      left: 7px;
-      font-size: 14px;
-      animation: kp-orbit-a 2.6s ease-in-out infinite;
+      top: -3px;
+      left: 50%;
+      font-size: 18px;
+      transform: translateX(-50%);
+      animation: kp-orbit-a 3s ease-in-out infinite;
     }
 
     .kp-star.orbit-b {
-      right: 1px;
-      top: 12px;
-      font-size: 12px;
-      animation: kp-orbit-b 2.6s ease-in-out infinite;
+      right: -3px;
+      bottom: 5px;
+      font-size: 18px;
+      animation: kp-orbit-b 3s ease-in-out infinite;
     }
 
     .kp-star.orbit-c {
-      bottom: 4px;
-      left: 10px;
-      font-size: 11px;
-      animation: kp-orbit-c 2.6s ease-in-out infinite;
+      left: -1px;
+      bottom: 5px;
+      font-size: 18px;
+      animation: kp-orbit-c 3s ease-in-out infinite;
     }
 
     .kp-overlay {
@@ -146,11 +148,11 @@ function getCss(theme: ChatWidgetTheme): string {
 
     .kp-panel {
       position: fixed;
-      bottom: 112px;
+      bottom: 88px;
       right: 24px;
       width: 480px;
       max-width: calc(100vw - 24px);
-      height: min(700px, calc(100vh - 136px));
+      height: min(730px, calc(100vh - 118px));
       background: var(--kp-panel-background);
       border: 1px solid rgba(255, 255, 255, 0.35);
       border-radius: 20px;
@@ -159,16 +161,17 @@ function getCss(theme: ChatWidgetTheme): string {
       display: flex;
       flex-direction: column;
       opacity: 0;
-      transform: translateX(44px) scale(0.985);
+      transform: translateX(64px) scale(0.982);
       transform-origin: bottom right;
       pointer-events: none;
-      transition: opacity 220ms ease, transform 220ms ease;
+      transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .kp-chat-widget.bottom-left .kp-panel {
       left: 24px;
       right: auto;
-      transform: translateX(-44px) scale(0.985);
+      transform: translateX(-64px) scale(0.982);
       transform-origin: bottom left;
     }
 
@@ -195,10 +198,10 @@ function getCss(theme: ChatWidgetTheme): string {
     }
 
     .kp-tool-button {
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
       background: transparent;
       color: #0f4f68;
       cursor: pointer;
@@ -214,10 +217,8 @@ function getCss(theme: ChatWidgetTheme): string {
     }
 
     .kp-pencil-icon {
-      width: 18px;
-      height: 18px;
-      border: 2px solid currentColor;
-      border-radius: 4px;
+      width: 22px;
+      height: 22px;
       position: relative;
       display: inline-block;
     }
@@ -225,19 +226,31 @@ function getCss(theme: ChatWidgetTheme): string {
     .kp-pencil-icon::before {
       content: "";
       position: absolute;
-      width: 10px;
-      height: 2px;
+      width: 14px;
+      height: 2.5px;
       background: currentColor;
-      transform: rotate(-45deg);
-      top: -1px;
-      right: -4px;
       border-radius: 999px;
+      transform: rotate(-45deg);
+      top: 3px;
+      right: 1px;
+    }
+
+    .kp-pencil-icon::after {
+      content: "";
+      position: absolute;
+      left: 2px;
+      bottom: 2px;
+      width: 11px;
+      height: 11px;
+      border: 2px solid currentColor;
+      border-radius: 4px;
     }
 
     .kp-chevron {
-      font-size: 16px;
-      color: var(--kp-muted-text);
+      font-size: 13px;
+      color: #66839a;
       transition: transform 160ms ease;
+      margin-left: -2px;
     }
 
     .kp-menu-trigger.open .kp-chevron {
@@ -246,7 +259,7 @@ function getCss(theme: ChatWidgetTheme): string {
 
     .kp-dropdown {
       position: absolute;
-      top: 40px;
+      top: 44px;
       left: 0;
       width: 164px;
       background: #ffffff;
@@ -257,7 +270,7 @@ function getCss(theme: ChatWidgetTheme): string {
       opacity: 0;
       transform: translateY(-6px);
       pointer-events: none;
-      transition: opacity 150ms ease, transform 150ms ease;
+      transition: opacity 180ms ease, transform 180ms ease;
       z-index: 2;
     }
 
@@ -395,11 +408,21 @@ function getCss(theme: ChatWidgetTheme): string {
       flex: 1;
       border: none;
       outline: none;
+      box-shadow: none;
       background: transparent;
       color: var(--kp-text);
       font-size: 14px;
       line-height: 1.5;
       min-width: 0;
+      appearance: none;
+    }
+
+    .kp-input:focus,
+    .kp-input:focus-visible,
+    .kp-input:active {
+      border: none;
+      outline: none;
+      box-shadow: none;
     }
 
     .kp-send {
@@ -462,27 +485,27 @@ function getCss(theme: ChatWidgetTheme): string {
     }
 
     @keyframes kp-main-pulse {
-      0%, 100% { transform: translate(-50%, -50%) scale(0.96); }
-      30% { transform: translate(-50%, -50%) scale(1.08); }
-      55% { transform: translate(-50%, -50%) scale(1); }
+      0%, 100% { transform: translate(-50%, -50%) scale(0.82); opacity: 0.45; }
+      38% { transform: translate(-50%, -50%) scale(1.04); opacity: 1; }
+      60% { transform: translate(-50%, -50%) scale(0.94); opacity: 0.88; }
     }
 
     @keyframes kp-orbit-a {
-      0%, 100% { transform: translate(0, 0) scale(0.8); opacity: 0.55; }
-      35% { transform: translate(10px, 10px) scale(1); opacity: 1; }
-      60% { transform: translate(4px, 5px) scale(0.9); opacity: 0.85; }
+      0%, 100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+      40% { transform: translate(-50%, 17px) scale(0.92); opacity: 0.96; }
+      62% { transform: translate(-50%, 2px) scale(1); opacity: 0.98; }
     }
 
     @keyframes kp-orbit-b {
-      0%, 100% { transform: translate(0, 0) scale(0.8); opacity: 0.45; }
-      35% { transform: translate(-11px, 4px) scale(1); opacity: 1; }
-      60% { transform: translate(-4px, 2px) scale(0.9); opacity: 0.78; }
+      0%, 100% { transform: translate(0, 0) scale(1); opacity: 1; }
+      40% { transform: translate(-16px, -13px) scale(0.92); opacity: 0.96; }
+      62% { transform: translate(-2px, -2px) scale(1); opacity: 0.98; }
     }
 
     @keyframes kp-orbit-c {
-      0%, 100% { transform: translate(0, 0) scale(0.75); opacity: 0.42; }
-      35% { transform: translate(7px, -10px) scale(1); opacity: 0.95; }
-      60% { transform: translate(3px, -4px) scale(0.88); opacity: 0.74; }
+      0%, 100% { transform: translate(0, 0) scale(1); opacity: 1; }
+      40% { transform: translate(16px, -13px) scale(0.92); opacity: 0.96; }
+      62% { transform: translate(2px, -2px) scale(1); opacity: 0.98; }
     }
   `;
 }

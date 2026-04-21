@@ -283,8 +283,9 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
   overlay.addEventListener("click", close);
   menuTrigger.addEventListener("click", (event) => {
     event.stopPropagation();
-    if (state.menuOpen) closeMenu();
-    else openMenu();
+    if (!state.menuOpen) {
+      openMenu();
+    }
   });
   newChatAction.addEventListener("click", resetConversation);
   myChatsAction.addEventListener("click", async () => {
@@ -296,6 +297,13 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
     open();
   });
   panel.addEventListener("click", (event) => {
+    if (
+      state.menuOpen &&
+      !dropdown.contains(event.target as Node) &&
+      !menuTrigger.contains(event.target as Node)
+    ) {
+      closeMenu();
+    }
     event.stopPropagation();
   });
   shadowRoot.addEventListener("click", (event) => {
