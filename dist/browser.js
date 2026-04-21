@@ -1,0 +1,2 @@
+import{a as o}from"./chunk-URKXBBXM.js";var e="0.1.0",t=o,r={init:t,createChatWidget:o,version:e};typeof window<"u"&&(window.ChatWidget=r);export{r as browserGlobal,o as createChatWidget,t as init,e as version};
+//# sourceMappingURL=browser.js.map
