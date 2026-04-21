@@ -14,6 +14,7 @@ type WidgetState = {
   open: boolean;
   accessTokenProvider: ResolvedChatWidgetConfig["getAccessToken"];
   historyLoaded: boolean;
+  menuOpen: boolean;
 };
 
 export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
@@ -26,7 +27,8 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
     chatId: resolveChatId(resolvedConfig),
     open: false,
     accessTokenProvider: resolvedConfig.getAccessToken,
-    historyLoaded: false
+    historyLoaded: false,
+    menuOpen: false
   };
 
   const host = document.createElement("div");
@@ -41,7 +43,14 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
   const launcher = createElement("button", "kp-launcher");
   launcher.type = "button";
   launcher.setAttribute("aria-label", resolvedConfig.launcherAriaLabel);
-  launcher.innerHTML = '<span class="kp-spark">✦</span>';
+  launcher.innerHTML = [
+    '<span class="kp-star-cluster" aria-hidden="true">',
+    '<span class="kp-star orbit-a">✦</span>',
+    '<span class="kp-star orbit-b">✦</span>',
+    '<span class="kp-star orbit-c">✦</span>',
+    '<span class="kp-star main">✦</span>',
+    "</span>"
+  ].join("");
 
   const panel = createElement("section", "kp-panel");
   panel.setAttribute("role", "dialog");
@@ -49,7 +58,29 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
   panel.setAttribute("aria-label", resolvedConfig.title);
 
   const header = createElement("div", "kp-header");
-  const headingWrap = createElement("div");
+  const toolbar = createElement("div", "kp-toolbar");
+  const menuTrigger = createElement("button", "kp-tool-button kp-menu-trigger");
+  menuTrigger.type = "button";
+  menuTrigger.setAttribute("aria-label", "Open chat actions");
+  menuTrigger.innerHTML = [
+    '<span class="kp-pencil-icon" aria-hidden="true"></span>',
+    '<span class="kp-chevron" aria-hidden="true">⌄</span>'
+  ].join("");
+  const dropdown = createElement("div", "kp-dropdown");
+  const newChatAction = createElement("button", "kp-dropdown-item", "New Chat");
+  newChatAction.type = "button";
+  const myChatsAction = createElement("button", "kp-dropdown-item", "My Chats");
+  myChatsAction.type = "button";
+  const openAssistantAction = createElement(
+    "button",
+    "kp-dropdown-item",
+    "Open Knowledge Assistant"
+  );
+  openAssistantAction.type = "button";
+  dropdown.append(newChatAction, myChatsAction, openAssistantAction);
+  toolbar.append(menuTrigger, dropdown);
+
+  const headingWrap = createElement("div", "kp-title-wrap");
   const title = createElement("h2", "kp-title", resolvedConfig.title);
   const subtitle = createElement("div", "kp-subtitle", resolvedConfig.subtitle);
   headingWrap.appendChild(title);
@@ -58,9 +89,13 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
   const closeButton = createElement("button", "kp-close", "×");
   closeButton.type = "button";
   closeButton.setAttribute("aria-label", resolvedConfig.closeAriaLabel);
-  header.append(headingWrap, closeButton);
+  header.append(toolbar, headingWrap, closeButton);
 
   const body = createElement("div", "kp-body");
+  const hero = createElement("div", "kp-hero");
+  const heroIcon = createElement("div", "kp-hero-icon", "✦");
+  const heroText = createElement("div", "kp-hero-text", resolvedConfig.welcomeMessage);
+  hero.append(heroIcon, heroText);
   const footer = createElement("div", "kp-footer");
   const form = createElement("form", "kp-form");
   const input = createElement("input", "kp-input");
@@ -83,7 +118,7 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
   shell.append(overlay, launcher, panel);
   shadowRoot.appendChild(shell);
 
-  appendMessage(body, "bot", resolvedConfig.welcomeMessage);
+  body.appendChild(hero);
 
   const suggestions = createElement("div", "kp-suggestions");
   body.appendChild(suggestions);
@@ -98,6 +133,7 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
     }
 
     state.open = true;
+    launcher.classList.add("hidden");
     overlay.classList.add("visible");
     panel.classList.add("open");
     resolvedConfig.onOpen?.();
@@ -112,7 +148,9 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
       return;
     }
 
+    closeMenu();
     state.open = false;
+    launcher.classList.remove("hidden");
     overlay.classList.remove("visible");
     panel.classList.remove("open");
     resolvedConfig.onClose?.();
@@ -172,6 +210,33 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
     }
   }
 
+  function openMenu(): void {
+    state.menuOpen = true;
+    menuTrigger.classList.add("open");
+    dropdown.classList.add("open");
+  }
+
+  function closeMenu(): void {
+    state.menuOpen = false;
+    menuTrigger.classList.remove("open");
+    dropdown.classList.remove("open");
+  }
+
+  function resetConversation(): void {
+    state.chatId = resolveChatId(resolvedConfig);
+    state.historyLoaded = false;
+    clearRenderedConversation(body, hero, suggestions);
+    renderSuggestions(
+      suggestions,
+      resolvedConfig.initialSuggestions,
+      async (text) => {
+        input.value = text;
+        await instance.sendMessage(text);
+      }
+    );
+    closeMenu();
+  }
+
   const instance: ChatWidgetInstance = {
     open,
     close,
@@ -204,7 +269,7 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
       );
 
       if (messages.length > 0) {
-        clearRenderedConversation(body, suggestions);
+        clearRenderedConversation(body, hero, suggestions);
         renderHistory(body, messages);
       }
 
@@ -216,6 +281,34 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
   launcher.addEventListener("click", () => instance.toggle());
   closeButton.addEventListener("click", close);
   overlay.addEventListener("click", close);
+  menuTrigger.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (state.menuOpen) closeMenu();
+    else openMenu();
+  });
+  newChatAction.addEventListener("click", resetConversation);
+  myChatsAction.addEventListener("click", async () => {
+    closeMenu();
+    await instance.loadHistory();
+  });
+  openAssistantAction.addEventListener("click", () => {
+    closeMenu();
+    open();
+  });
+  panel.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
+  shadowRoot.addEventListener("click", (event) => {
+    const target = event.target;
+    if (
+      state.menuOpen &&
+      target instanceof Node &&
+      !dropdown.contains(target) &&
+      !menuTrigger.contains(target)
+    ) {
+      closeMenu();
+    }
+  });
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     await sendMessage(input.value);
@@ -300,9 +393,10 @@ function renderSuggestions(
 
 function clearRenderedConversation(
   body: HTMLDivElement,
+  hero: HTMLDivElement,
   suggestions: HTMLDivElement
 ): void {
-  const preservedNodes = new Set([suggestions]);
+  const preservedNodes = new Set([hero, suggestions]);
   for (const child of Array.from(body.children)) {
     if (!preservedNodes.has(child as HTMLDivElement)) {
       child.remove();
