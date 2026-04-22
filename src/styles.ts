@@ -161,23 +161,23 @@ function getCss(theme: ChatWidgetTheme): string {
       display: flex;
       flex-direction: column;
       opacity: 0;
-      transform: translateX(64px) scale(0.982);
+      transform: translateX(112px) scale(0.97);
       transform-origin: bottom right;
       pointer-events: none;
-      transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1),
-        transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+      transition: opacity 420ms cubic-bezier(0.16, 1, 0.3, 1),
+        transform 3000ms cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .kp-chat-widget.bottom-left .kp-panel {
       left: 24px;
       right: auto;
-      transform: translateX(-64px) scale(0.982);
+      transform: translateX(-112px) scale(0.97);
       transform-origin: bottom left;
     }
 
     .kp-panel.open {
       opacity: 1;
-      transform: translateX(0);
+      transform: translateX(0) scale(1);
       pointer-events: auto;
     }
 
@@ -470,12 +470,12 @@ function getCss(theme: ChatWidgetTheme): string {
         max-width: none;
         height: 100vh;
         border-radius: 0;
-        transform: translateY(12px);
-        transform-origin: center;
+        transform: translateX(72px) scale(0.985);
+        transform-origin: center right;
       }
 
       .kp-panel.open {
-        transform: translateY(0);
+        transform: translateX(0) scale(1);
       }
     }
 
