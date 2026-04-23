@@ -12,9 +12,18 @@ import type {
 type WidgetState = {
   chatId: string;
   open: boolean;
+  fullPageOpen: boolean;
   accessTokenProvider: ResolvedChatWidgetConfig["getAccessToken"];
   historyLoaded: boolean;
   menuOpen: boolean;
+  recentActivity: string[];
+};
+
+type ConversationView = {
+  body: HTMLDivElement;
+  input: HTMLInputElement;
+  suggestions: HTMLDivElement;
+  hero: HTMLDivElement;
 };
 
 export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
@@ -26,9 +35,11 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
   const state: WidgetState = {
     chatId: resolveChatId(resolvedConfig),
     open: false,
+    fullPageOpen: false,
     accessTokenProvider: resolvedConfig.getAccessToken,
     historyLoaded: false,
-    menuOpen: false
+    menuOpen: false,
+    recentActivity: (resolvedConfig.initialSuggestions ?? []).slice(0, 4)
   };
 
   const host = document.createElement("div");
@@ -122,10 +133,119 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
 
   const suggestions = createElement("div", "kp-suggestions");
   body.appendChild(suggestions);
-  renderSuggestions(suggestions, resolvedConfig.initialSuggestions, async (text) => {
-    input.value = text;
-    await instance.sendMessage(text);
+  const panelView: ConversationView = { body, input, suggestions, hero };
+
+  const fullPage = createElement("section", "kp-full-page");
+  fullPage.setAttribute("role", "dialog");
+  fullPage.setAttribute("aria-modal", "true");
+  fullPage.setAttribute("aria-label", `${resolvedConfig.title} page`);
+
+  const fullPageShell = createElement("div", "kp-full-page-shell");
+  const fullPageHeader = createElement("div", "kp-full-page-header");
+  const fullPageBrand = createElement("div", "kp-full-page-brand");
+  const fullPageMark = createElement("div", "kp-full-page-brand-mark", "✦");
+  const fullPageBrandText = createElement(
+    "div",
+    "kp-full-page-brand-text",
+    resolvedConfig.title
+  );
+  fullPageBrand.append(fullPageMark, fullPageBrandText);
+
+  const fullPageHeaderActions = createElement("div", "kp-full-page-header-actions");
+  const fullPageBadge = createElement("div", "kp-full-page-badge", "Knowledge Assistant");
+  const fullPageClose = createElement("button", "kp-full-page-close", "×");
+  fullPageClose.type = "button";
+  fullPageClose.setAttribute("aria-label", "Close knowledge assistant page");
+  fullPageHeaderActions.append(fullPageBadge, fullPageClose);
+  fullPageHeader.append(fullPageBrand, fullPageHeaderActions);
+
+  const fullPageBreadCrumb = createElement(
+    "div",
+    "kp-full-page-breadcrumb",
+    "Home  ›  Knowledge Assistant"
+  );
+
+  const fullPageContent = createElement("div", "kp-full-page-content");
+  const fullPageSidebar = createElement("aside", "kp-full-page-sidebar");
+  const fullPageNewChat = createElement("button", "kp-full-page-new-chat", "+ New Chat");
+  fullPageNewChat.type = "button";
+
+  const fullPageSearchWrap = createElement("div", "kp-full-page-search");
+  const fullPageSearchInput = createElement("input", "kp-full-page-search-input");
+  fullPageSearchInput.type = "search";
+  fullPageSearchInput.placeholder = "Search Chat";
+  const fullPageSearchIcon = createElement("span", "kp-full-page-search-icon", "⌕");
+  fullPageSearchWrap.append(fullPageSearchInput, fullPageSearchIcon);
+
+  const fullPageRecentLabel = createElement("div", "kp-full-page-section-label", "Recent Activity");
+  const fullPageRecentList = createElement("div", "kp-full-page-recent-list");
+  const fullPagePinnedLabel = createElement("div", "kp-full-page-section-label", "Pinned Collections");
+  const fullPagePinnedList = createElement("div", "kp-full-page-pinned-list");
+  fullPageSidebar.append(
+    fullPageNewChat,
+    fullPageSearchWrap,
+    fullPageRecentLabel,
+    fullPageRecentList,
+    fullPagePinnedLabel,
+    fullPagePinnedList
+  );
+
+  const fullPageMain = createElement("main", "kp-full-page-main");
+  const fullPagePanel = createElement("section", "kp-full-page-panel");
+  const fullPageBody = createElement("div", "kp-full-page-body");
+  const fullPageHero = createElement("div", "kp-full-page-hero");
+  const fullPageHeroBadge = createElement("div", "kp-full-page-hero-badge");
+  fullPageHeroBadge.innerHTML = [
+    '<span class="kp-star-cluster kp-star-cluster-static" aria-hidden="true">',
+    '<span class="kp-star orbit-a">✦</span>',
+    '<span class="kp-star orbit-b">✦</span>',
+    '<span class="kp-star orbit-c">✦</span>',
+    '<span class="kp-star main">✦</span>',
+    "</span>"
+  ].join("");
+  const fullPageHeroText = createElement("div", "kp-full-page-hero-text", resolvedConfig.welcomeMessage);
+  fullPageHero.append(fullPageHeroBadge, fullPageHeroText);
+
+  const fullPageSuggestions = createElement("div", "kp-suggestions kp-full-page-suggestions");
+  fullPageBody.append(fullPageHero, fullPageSuggestions);
+
+  const fullPageFooter = createElement("div", "kp-full-page-footer");
+  const fullPageForm = createElement("form", "kp-form kp-full-page-form");
+  const fullPageInput = createElement("input", "kp-input kp-full-page-input");
+  fullPageInput.type = "text";
+  fullPageInput.autocomplete = "off";
+  fullPageInput.placeholder = resolvedConfig.inputPlaceholder;
+  const fullPageSend = createElement("button", "kp-send kp-full-page-send", "➜");
+  fullPageSend.type = "submit";
+  const fullPageNote = createElement(
+    "div",
+    "kp-note kp-full-page-note",
+    "Answers are generated based on your access permissions"
+  );
+  fullPageForm.append(fullPageInput, fullPageSend);
+  fullPageFooter.append(fullPageForm, fullPageNote);
+  fullPagePanel.append(fullPageBody, fullPageFooter);
+  fullPageMain.appendChild(fullPagePanel);
+  fullPageContent.append(fullPageSidebar, fullPageMain);
+  fullPageShell.append(fullPageHeader, fullPageBreadCrumb, fullPageContent);
+  fullPage.appendChild(fullPageShell);
+  shell.appendChild(fullPage);
+
+  const fullPageView: ConversationView = {
+    body: fullPageBody,
+    input: fullPageInput,
+    suggestions: fullPageSuggestions,
+    hero: fullPageHero
+  };
+
+  syncSuggestionButtons(panelView, resolvedConfig.initialSuggestions, async (text) => {
+    await sendMessageToView(text, panelView);
   });
+  syncSuggestionButtons(fullPageView, resolvedConfig.initialSuggestions, async (text) => {
+    await sendMessageToView(text, fullPageView);
+  });
+  renderRecentActivity(fullPageRecentList, state.recentActivity);
+  renderPinnedCollections(fullPagePinnedList, resolvedConfig.initialSuggestions);
 
   function open(): void {
     if (state.open) {
@@ -133,6 +253,8 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
     }
 
     state.open = true;
+    state.fullPageOpen = false;
+    fullPage.classList.remove("open");
     launcher.classList.add("hidden");
     overlay.classList.add("visible");
     panel.classList.add("open");
@@ -156,20 +278,23 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
     resolvedConfig.onClose?.();
   }
 
-  async function sendMessage(message: string): Promise<void> {
+  async function sendMessageToView(
+    message: string,
+    view: ConversationView
+  ): Promise<void> {
     const trimmed = message.trim();
 
     if (!trimmed) {
       return;
     }
 
-    appendMessage(body, "user", trimmed);
-    input.value = "";
-    body.scrollTop = body.scrollHeight;
+    appendMessage(view.body, "user", trimmed);
+    view.input.value = "";
+    view.body.scrollTop = view.body.scrollHeight;
 
     const loading = createElement("div", "kp-loading", "Thinking...");
-    body.appendChild(loading);
-    body.scrollTop = body.scrollHeight;
+    view.body.appendChild(loading);
+    view.body.scrollTop = view.body.scrollHeight;
 
     try {
       const response = await postMessage(
@@ -191,12 +316,13 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
         loading.remove();
       }
 
-      appendMessage(body, "bot", response.answer, response.citations?.length);
+      appendMessage(view.body, "bot", response.answer, response.citations?.length);
+      rememberRecentActivity(state, trimmed);
+      renderRecentActivity(fullPageRecentList, state.recentActivity);
 
       if (response.suggestions?.length) {
-        renderSuggestions(suggestions, response.suggestions, async (text) => {
-          input.value = text;
-          await instance.sendMessage(text);
+        syncSuggestionButtons(view, response.suggestions, async (text) => {
+          await sendMessageToView(text, view);
         });
       }
     } catch (error) {
@@ -206,8 +332,40 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
         loading.remove();
       }
 
-      appendMessage(body, "bot", `Request failed: ${normalized.message}`);
+      appendMessage(view.body, "bot", `Request failed: ${normalized.message}`);
     }
+  }
+
+  async function sendMessage(message: string): Promise<void> {
+    const targetView = state.fullPageOpen ? fullPageView : panelView;
+    await sendMessageToView(message, targetView);
+  }
+
+  function openFullPage(): void {
+    state.chatId = resolveChatId(resolvedConfig);
+    state.historyLoaded = false;
+    state.fullPageOpen = true;
+    state.open = false;
+    closeMenu();
+    panel.classList.remove("open");
+    overlay.classList.remove("visible");
+    launcher.classList.add("hidden");
+    resetConversationView(fullPageView);
+    syncSuggestionButtons(fullPageView, resolvedConfig.initialSuggestions, async (text) => {
+      await sendMessageToView(text, fullPageView);
+    });
+    fullPage.classList.add("open");
+    queueMicrotask(() => fullPageInput.focus());
+  }
+
+  function closeFullPage(): void {
+    if (!state.fullPageOpen) {
+      return;
+    }
+
+    state.fullPageOpen = false;
+    fullPage.classList.remove("open");
+    launcher.classList.remove("hidden");
   }
 
   function openMenu(): void {
@@ -225,15 +383,10 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
   function resetConversation(): void {
     state.chatId = resolveChatId(resolvedConfig);
     state.historyLoaded = false;
-    clearRenderedConversation(body, hero, suggestions);
-    renderSuggestions(
-      suggestions,
-      resolvedConfig.initialSuggestions,
-      async (text) => {
-        input.value = text;
-        await instance.sendMessage(text);
-      }
-    );
+    resetConversationView(panelView);
+    syncSuggestionButtons(panelView, resolvedConfig.initialSuggestions, async (text) => {
+      await sendMessageToView(text, panelView);
+    });
     closeMenu();
   }
 
@@ -269,8 +422,8 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
       );
 
       if (messages.length > 0) {
-        clearRenderedConversation(body, hero, suggestions);
-        renderHistory(body, messages);
+        clearRenderedConversation(panelView.body, panelView.hero, panelView.suggestions);
+        renderHistory(panelView.body, messages);
       }
 
       state.historyLoaded = true;
@@ -293,8 +446,16 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
     await instance.loadHistory();
   });
   openAssistantAction.addEventListener("click", () => {
-    closeMenu();
-    open();
+    openFullPage();
+  });
+  fullPageClose.addEventListener("click", closeFullPage);
+  fullPageNewChat.addEventListener("click", () => {
+    state.chatId = resolveChatId(resolvedConfig);
+    resetConversationView(fullPageView);
+    syncSuggestionButtons(fullPageView, resolvedConfig.initialSuggestions, async (text) => {
+      await sendMessageToView(text, fullPageView);
+    });
+    queueMicrotask(() => fullPageInput.focus());
   });
   panel.addEventListener("click", (event) => {
     if (
@@ -321,9 +482,22 @@ export function createChatWidget(config: ChatWidgetConfig): ChatWidgetInstance {
     event.preventDefault();
     await sendMessage(input.value);
   });
+  fullPageForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await sendMessageToView(fullPageInput.value, fullPageView);
+  });
 
   function handleEscapeKeydown(event: KeyboardEvent): void {
-    if (event.key === "Escape" && state.open) {
+    if (event.key !== "Escape") {
+      return;
+    }
+
+    if (state.fullPageOpen) {
+      closeFullPage();
+      return;
+    }
+
+    if (state.open) {
       close();
     }
   }
@@ -399,6 +573,17 @@ function renderSuggestions(
   }
 }
 
+function syncSuggestionButtons(
+  view: ConversationView,
+  suggestions: string[],
+  onClick: (text: string) => Promise<void>
+): void {
+  renderSuggestions(view.suggestions, suggestions, async (text) => {
+    view.input.value = text;
+    await onClick(text);
+  });
+}
+
 function clearRenderedConversation(
   body: HTMLDivElement,
   hero: HTMLDivElement,
@@ -412,11 +597,46 @@ function clearRenderedConversation(
   }
 }
 
+function resetConversationView(
+  view: ConversationView
+): void {
+  clearRenderedConversation(view.body, view.hero, view.suggestions);
+  view.input.value = "";
+}
+
 function renderHistory(
   body: HTMLDivElement,
   messages: ChatHistoryMessage[]
 ): void {
   for (const message of messages) {
     appendMessage(body, message.role === "assistant" ? "bot" : "user", message.text);
+  }
+}
+
+function rememberRecentActivity(state: WidgetState, message: string): void {
+  state.recentActivity = [
+    message,
+    ...state.recentActivity.filter((item) => item !== message)
+  ].slice(0, 4);
+}
+
+function renderRecentActivity(container: HTMLDivElement, items: string[]): void {
+  container.textContent = "";
+
+  for (const item of items) {
+    const entry = createElement("div", "kp-full-page-item", item);
+    container.appendChild(entry);
+  }
+}
+
+function renderPinnedCollections(
+  container: HTMLDivElement,
+  suggestions: string[]
+): void {
+  container.textContent = "";
+
+  for (const suggestion of suggestions.slice(0, 3)) {
+    const entry = createElement("div", "kp-full-page-item kp-full-page-item-pinned", suggestion);
+    container.appendChild(entry);
   }
 }

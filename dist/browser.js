@@ -1,2 +1,2 @@
-import{a as o}from"./chunk-IGWA3ZH4.js";var e="0.1.0",t=o,r={init:t,createChatWidget:o,version:e};typeof window<"u"&&(window.ChatWidget=r);export{r as browserGlobal,o as createChatWidget,t as init,e as version};
+import{a as o}from"./chunk-5KTXVACA.js";var e="0.1.0",t=o,r={init:t,createChatWidget:o,version:e};typeof window<"u"&&(window.ChatWidget=r);export{r as browserGlobal,o as createChatWidget,t as init,e as version};
 //# sourceMappingURL=browser.js.map
